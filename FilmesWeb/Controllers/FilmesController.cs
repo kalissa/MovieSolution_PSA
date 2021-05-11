@@ -209,5 +209,28 @@ namespace FilmesWeb.Controllers
         {
             return _context.Movies.Any(e => e.MovieId == id);
         }
+
+        [AllowAnonymous]
+        public IActionResult Create()
+        {
+            ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "GenreId");
+            return View();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("MovieId,Title,Director,ReleaseDate,Gross,Rating,GenreID")] Movie movie)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(movie);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "GenreId", movie.GenreID);
+            return View(movie);
+        }
+
     }
 }
