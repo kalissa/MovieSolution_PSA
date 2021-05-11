@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Negocio;
 using Persistencia.Repositorio;
@@ -38,10 +39,10 @@ namespace FilmesWeb.Controllers
         }
 
         [AllowAnonymous]
-        public IActionResult Index()
+        public async Task<IActionResult> IndexAsync()
         {
-            List<Movie> filmes = _negocio.TodosFilmes();
-            return View(filmes);
+            var movieContext = _context.Movies.Include(m => m.Genre);
+            return View(await movieContext.ToListAsync());
         }
 
         [AllowAnonymous]
@@ -58,6 +59,8 @@ namespace FilmesWeb.Controllers
             {
                 return NotFound();
             }
+            ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "Name", movie.GenreID);
+
             return View(movie);
         }
 
@@ -90,6 +93,8 @@ namespace FilmesWeb.Controllers
                 }
                 return RedirectToAction("Index");
             }
+            ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "Name", movie.GenreID);
+
             return View(movie);
         }
 
