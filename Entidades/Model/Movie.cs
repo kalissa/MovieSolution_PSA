@@ -19,7 +19,6 @@ namespace Entidades.Model
         [Column(TypeName = "decimal(18, 2)")]
         public decimal Gross { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
         public double Rating { get; set; }
 
         public int GenreID { get; set; }
