@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Negocio;
+using Persistencia.Repositorio;
 
 namespace FilmesWeb.Controllers
 {
@@ -20,10 +22,13 @@ namespace FilmesWeb.Controllers
 
         public readonly UserManager<ApplicationUser> _userManager;
 
+        private readonly MovieContext _context;
+
+
         private IWebHostEnvironment _environment;
 
-        public FilmesController(AdmFacade negocio, 
-                                UserManager<ApplicationUser> userManager, 
+        public FilmesController(AdmFacade negocio,
+                                UserManager<ApplicationUser> userManager,
                                 IWebHostEnvironment environment)
         {
             _negocio = negocio;
@@ -38,9 +43,56 @@ namespace FilmesWeb.Controllers
             return View(filmes);
         }
 
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var movie = await _context.Movies.FindAsync(id);
+            if (movie == null)
+            {
+                return NotFound();
+            }
+            return View(movie);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Title,ReleaseDate,Genre,Price")] Movie movie)
+        {
+            if (id != movie.MovieId)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(movie);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!MovieExists(movie.MovieId))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction("Index");
+            }
+            return View(movie);
+        }
+
         [AllowAnonymous]
         public IActionResult roteiroAutenticacao()
-        { 
+        {
             return View();
         }
 
@@ -61,7 +113,12 @@ namespace FilmesWeb.Controllers
             ViewBag.UserName = usuario.UserName;
 
             return View();
-            
+
+        }
+
+        private bool MovieExists(int id)
+        {
+            return _context.Movies.Any(e => e.MovieId == id);
         }
     }
 }
