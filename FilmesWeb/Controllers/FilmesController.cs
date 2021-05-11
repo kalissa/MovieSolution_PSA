@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Entidades.Model;
 using Entidades.ViewModels;
+using FilmesWeb.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -39,18 +40,33 @@ namespace FilmesWeb.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> Index(string searchString)
+        public async Task<IActionResult> Index(string movieGenre, string searchString)
         {
-            
+            // Use LINQ to get list of genres.
+            IQueryable<string> genreQuery = (from m in _context.Movies
+                                             orderby m.Genre
+                                             select m.Genre.Name);
+
             var movies = from m in _context.Movies
                          select m;
 
-            if (!String.IsNullOrEmpty(searchString))
+            if (!string.IsNullOrEmpty(searchString))
             {
                 movies = movies.Where(s => s.Title.Contains(searchString));
             }
 
-            return View(await movies.ToListAsync());
+
+            if (!string.IsNullOrEmpty(movieGenre))
+            {
+                movies = movies.Where(x => x.Genre.Name.Contains(movieGenre));
+            }
+
+            var movieGenreVM = new MovieGenreViewModel
+            {
+                Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                Movies = await movies.ToListAsync()
+            };
+            return View(movieGenreVM);
         }
 
         [AllowAnonymous]
@@ -61,7 +77,6 @@ namespace FilmesWeb.Controllers
         }
 
         [AllowAnonymous]
-
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -79,7 +94,6 @@ namespace FilmesWeb.Controllers
 
             return View(movie);
         }
-
 
         [AllowAnonymous]
         public async Task<IActionResult> Edit(int? id)
@@ -164,7 +178,6 @@ namespace FilmesWeb.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
 
         [AllowAnonymous]
         public IActionResult roteiroAutenticacao()
