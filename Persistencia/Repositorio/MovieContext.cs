@@ -7,8 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Persistencia.Repositorio
 {
     // contexto vai gerenciar o Identity
-    //public class MovieContext : DbContext
-    public class MovieContext : IdentityDbContext<ApplicationUser>
+    public class MovieContext : DbContext
     {
         public MovieContext() : base()
         {
@@ -49,5 +48,4 @@ namespace Persistencia.Repositorio
         }
     }
 }
-
 

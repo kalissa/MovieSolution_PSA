@@ -31,6 +31,7 @@ namespace FilmesWeb.Controllers
                                 UserManager<ApplicationUser> userManager,
                                 IWebHostEnvironment environment)
         {
+            _context = new MovieContext();
             _negocio = negocio;
             _userManager = userManager;
             _environment = environment;
@@ -43,12 +44,14 @@ namespace FilmesWeb.Controllers
             return View(filmes);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
+
 
             var movie = await _context.Movies.FindAsync(id);
             if (movie == null)
