@@ -39,10 +39,25 @@ namespace FilmesWeb.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> IndexAsync()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var movieContext = _context.Movies.Include(m => m.Genre);
-            return View(await movieContext.ToListAsync());
+            
+            var movies = from m in _context.Movies
+                         select m;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                movies = movies.Where(s => s.Title.Contains(searchString));
+            }
+
+            return View(await movies.ToListAsync());
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public string Index(string searchString, bool notUsed)
+        {
+            return "From [HttpPost]Index: filter on " + searchString;
         }
 
         [AllowAnonymous]
