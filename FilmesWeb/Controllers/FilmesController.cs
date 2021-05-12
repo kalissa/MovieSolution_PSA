@@ -196,11 +196,10 @@ namespace FilmesWeb.Controllers
             ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "Name", movie.GenreID);
 
             return View(movieToUpdate);
-
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? id, bool? concurrencyError)
         {
             if (id == null)
             {
@@ -208,10 +207,25 @@ namespace FilmesWeb.Controllers
             }
 
             var movie = await _context.Movies
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.MovieId == id);
             if (movie == null)
             {
+                if (concurrencyError.GetValueOrDefault())
+                {
+                    return RedirectToAction(nameof(Index));
+                }
                 return NotFound();
+            }
+
+            if (concurrencyError.GetValueOrDefault())
+            {
+                ViewData["ConcurrencyErrorMessage"] = "The record you attempted to delete "
+                    + "was modified by another user after you got the original values. "
+                    + "The delete operation was canceled and the current values in the "
+                    + "database have been displayed. If you still want to delete this "
+                    + "record, click the Delete button again. Otherwise "
+                    + "click the Back to List hyperlink.";
             }
 
             return View(movie);
