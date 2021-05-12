@@ -46,6 +46,27 @@ namespace FilmesWeb.Controllers
         }
 
         [AllowAnonymous]
+
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var movie = await _context.Movies
+                .Include(m => m.Genre)
+                .FirstOrDefaultAsync(m => m.MovieId == id);
+            if (movie == null)
+            {
+                return NotFound();
+            }
+
+            return View(movie);
+        }
+
+
+        [AllowAnonymous]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
