@@ -235,15 +235,25 @@ namespace FilmesWeb.Controllers
         // POST: Movies/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Delete(Movie movie)
         {
-            var movie = await _context.Movies.FindAsync(id);
-            _context.Movies.Remove(movie);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                if (await _context.Movies.AnyAsync(m => m.MovieId == movie.MovieId))
+                {
+                    _context.Movies.Remove(movie);
+                    await _context.SaveChangesAsync();
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException /* ex */)
+            {
+                //Log the error (uncomment ex variable name and write a log.)
+                return RedirectToAction(nameof(Delete), new { concurrencyError = true, id = movie.MovieId});
+            }
         }
 
-        [AllowAnonymous]
+            [AllowAnonymous]
         public IActionResult roteiroAutenticacao()
         {
             return View();
