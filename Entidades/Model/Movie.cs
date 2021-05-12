@@ -24,6 +24,8 @@ namespace Entidades.Model
         public int GenreID { get; set; }
         public virtual Genre Genre { get; set; }
 
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
         public virtual ICollection<ActorMovie> Characters { get; set; }
     }
 

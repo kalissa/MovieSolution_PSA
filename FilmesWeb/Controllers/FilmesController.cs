@@ -117,36 +117,86 @@ namespace FilmesWeb.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AllowAnonymous]
-        public async Task<IActionResult> Edit(int id, [Bind("MovieId,Title,ReleaseDate,GenreID,Price")] Movie movie)
+        public async Task<IActionResult> Edit(int id, [Bind("MovieId,Title,ReleaseDate,GenreID,Price")] Movie movie, byte[] rowVersion)
         {
             if (id != movie.MovieId)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+
+            var movieToUpdate = await _context.Movies.FirstOrDefaultAsync(m => m.MovieId == id);
+
+            if (movieToUpdate == null)
+            {
+                Movie deletedMovie = new Movie();
+                await TryUpdateModelAsync(deletedMovie);
+                ModelState.AddModelError(string.Empty,
+                    "Unable to save changes. The movie was deleted by another user.");
+                ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "Name", movie.GenreID);
+                return View(deletedMovie);
+            }
+
+            _context.Entry(movieToUpdate).Property("RowVersion").OriginalValue = rowVersion;
+
+            if (await TryUpdateModelAsync<Movie>(
+                movieToUpdate,
+                "",
+               s => s.Title, s => s.Director, s => s.ReleaseDate, s => s.Gross, s => s.Rating, s => s.GenreID))
+
             {
                 try
                 {
-                    _context.Update(movie);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
-                    if (!MovieExists(movie.MovieId))
+                    var exceptionEntry = ex.Entries.Single();
+                    var clientValues = (Movie)exceptionEntry.Entity;
+                    var databaseEntry = exceptionEntry.GetDatabaseValues();
+                    if (databaseEntry == null)
                     {
-                        return NotFound();
+                        ModelState.AddModelError(string.Empty,
+                            "Unable to save changes. The Movie was deleted by another user.");
                     }
                     else
                     {
-                        throw;
+                        var databaseValues = (Movie)databaseEntry.ToObject();
+
+                        if (databaseValues.Title != clientValues.Title)
+                        {
+                            ModelState.AddModelError("Title", $"Current value: {databaseValues.Title}");
+                        }
+                        if (databaseValues.Director != clientValues.Director)
+                        {
+                            ModelState.AddModelError("Director", $"Current value: {databaseValues.Director:c}");
+                        }
+                        if (databaseValues.ReleaseDate != clientValues.ReleaseDate)
+                        {
+                            ModelState.AddModelError("ReleaseDate", $"Current value: {databaseValues.ReleaseDate:d}");
+                        }
+                        if (databaseValues.GenreID != clientValues.GenreID)
+                        {
+                            Genre databaseGenre= await _context.Genres.FirstOrDefaultAsync(i => i.GenreId == databaseValues.GenreID);
+                            ModelState.AddModelError("GenreID", $"Current value: {databaseGenre?.GenreId}");
+                        }
+
+                        ModelState.AddModelError(string.Empty, "The record you attempted to edit "
+                                + "was modified by another user after you got the original value. The "
+                                + "edit operation was canceled and the current values in the database "
+                                + "have been displayed. If you still want to edit this record, click "
+                                + "the Save button again. Otherwise click the Back to List hyperlink.");
+                        movieToUpdate.RowVersion = (byte[])databaseValues.RowVersion;
+                        ModelState.Remove("RowVersion");
                     }
                 }
-                return RedirectToAction("Index");
             }
+
             ViewData["GenreID"] = new SelectList(_context.Genres, "GenreId", "Name", movie.GenreID);
 
-            return View(movie);
+            return View(movieToUpdate);
+
         }
 
         [AllowAnonymous]
